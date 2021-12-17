@@ -1,7 +1,11 @@
 
 fastapi
+SQLAlchemy
 uvicorn
 
 # dev
+asgi-lifespan
+httpx
 pytest
+pytest-asyncio
 requests

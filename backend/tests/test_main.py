@@ -1,10 +1,12 @@
-from fastapi.testclient import TestClient
-from checklists.main import app
+import pytest
 
-client = TestClient(app)
+from httpx import AsyncClient
 
 
-def test_ping():
-    response = client.get('/ping')
+@pytest.mark.asyncio
+async def test_ping(
+        client: AsyncClient
+):
+    response = await client.get('/ping')
     assert response.status_code == 200
     assert response.json() == {'ping': 'pong'}
