@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from database.core import SessionLocal
 from auth import models, schemas
 from auth import crud
-from auth.exceptions import EmailAlreadyTaken
+from auth.exceptions import EmailAlreadyTaken, UserNotExisting
 
 
 router = APIRouter()
@@ -32,23 +32,23 @@ async def register(request: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.delete('/{user_id}', status_code=status.HTTP_202_ACCEPTED)
 async def delete_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id)
-    if not user.first():
+    try:
+        await crud.delete_profile(user_id, db)
+        return {}
+    except UserNotExisting:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'user with id {user_id} not found',
         )
-    user.delete()
-    db.commit()
-    return {}
 
 
 @router.get('/{user_id}', status_code=status.HTTP_200_OK)
 async def get_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.id == user_id)
-    if not user.first():
+    try:
+        profile = await crud.get_profile(user_id, db)
+        return profile
+    except UserNotExisting:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'user with id {user_id} not found',
         )
-    return user.first()
