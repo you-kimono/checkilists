@@ -1,5 +1,7 @@
-
+bcrypt
 fastapi
+passlib
+pydantic[email]
 SQLAlchemy
 uvicorn
 
