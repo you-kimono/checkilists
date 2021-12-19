@@ -3,11 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from database.core import engine, get_db
-from auth import models, schemas
-from auth import crud
-from auth.exceptions import EmailAlreadyTaken, InvalidProfile
-from .hashing import Hash
-from . import token
+from . import models, schemas, services
+from auth.exceptions import EmailAlreadyTaken, InvalidProfile, LoginFailed
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -17,7 +14,7 @@ router = APIRouter()
 @router.post('/register', status_code=status.HTTP_201_CREATED, response_model=schemas.Profile)
 async def register(request: schemas.ProfileCreate, db: Session = Depends(get_db)):
     try:
-        profile = await crud.save_profile(models.Profile(**request.dict()), db)
+        profile = await services.register(models.Profile(**request.dict()), db)
         return profile
     except EmailAlreadyTaken:
         raise HTTPException(
@@ -33,24 +30,15 @@ async def login(request: OAuth2PasswordRequestForm = Depends(), db: Session = De
         detail=f'invalid credentials',
     )
     try:
-        profile = await crud.get_profile_by_email(request.username, db)
-        if not Hash.verify(profile.password, request.password):
-            raise invalid_credentials_exception
-        # TODO generate jwt token and return it
-        access_token_expires = token.timedelta(minutes=token.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = token.create_access_token(
-            data={"sub": profile.email}, expires_delta=access_token_expires
-        )
-        return {"access_token": access_token, "token_type": "bearer"}
-    except InvalidProfile:
+        return await services.login(request.username, request.password, db)
+    except LoginFailed:
         raise invalid_credentials_exception
 
 
 @router.delete('/profiles/{profile_id}', status_code=status.HTTP_202_ACCEPTED)
 async def delete_profile(profile_id: int, db: Session = Depends(get_db)):
     try:
-        await crud.delete_profile(profile_id, db)
-        return {}
+        return await services.delete_profile_by_id(profile_id, db)
     except InvalidProfile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -61,8 +49,7 @@ async def delete_profile(profile_id: int, db: Session = Depends(get_db)):
 @router.get('/profiles/{profile_id}', status_code=status.HTTP_200_OK)
 async def get_profile(profile_id: int, db: Session = Depends(get_db)):
     try:
-        profile = await crud.get_profile_by_id(profile_id, db)
-        return profile
+        return await services.get_profile_by_id(profile_id, db)
     except InvalidProfile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

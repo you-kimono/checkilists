@@ -10,3 +10,8 @@ class InvalidProfile(Exception):
         super(InvalidProfile, self).__init__(msg, *args)
         self.profile_id = profile_id
         self.email = email
+
+
+class LoginFailed(Exception):
+    def __init__(self, msg: str = 'login failed. invalid credentials', *args):
+        super(LoginFailed, self).__init__(msg, *args)
