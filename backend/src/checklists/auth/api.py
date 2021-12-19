@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from database.core import engine, SessionLocal
+from database.core import engine, get_db
 from auth import models, schemas
 from auth import crud
 from auth.exceptions import EmailAlreadyTaken, InvalidProfile
@@ -12,14 +12,6 @@ from . import token
 
 models.Base.metadata.create_all(bind=engine)
 router = APIRouter()
-
-
-async def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.post('/register', status_code=status.HTTP_201_CREATED, response_model=schemas.Profile)
