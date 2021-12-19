@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from database.core import engine, SessionLocal
@@ -34,13 +35,13 @@ async def register(request: schemas.ProfileCreate, db: Session = Depends(get_db)
 
 
 @router.post('/login')
-async def login(request: schemas.Login, db: Session = Depends(get_db)):
+async def login(request: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     invalid_credentials_exception: HTTPException = HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f'invalid credentials',
     )
     try:
-        profile = await crud.get_profile_by_email(request.email, db)
+        profile = await crud.get_profile_by_email(request.username, db)
         if not Hash.verify(profile.password, request.password):
             raise invalid_credentials_exception
         # TODO generate jwt token and return it

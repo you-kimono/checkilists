@@ -110,7 +110,16 @@ class TestLogin:
             new_profile: schemas.ProfileCreate
     ) -> None:
         await client.post('/register', json=new_profile.dict())
-        response = await client.post(f'/login', json=new_profile.dict())
+        response = await client.post(
+            '/login',
+            data={
+                'username': new_profile.email,
+                'password': new_profile.password
+            },
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+        )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert '' != data['access_token']
