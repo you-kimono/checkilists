@@ -4,6 +4,7 @@ from httpx import AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from auth import schemas
 from database.core import Base, get_db
 from main import app
 
@@ -43,3 +44,28 @@ async def client() -> AsyncClient:
             Base.metadata.create_all(bind=test_engine)
             yield client
             Base.metadata.drop_all(bind=test_engine)
+
+
+@pytest.fixture(scope='function')
+async def authorized_client(client: AsyncClient):
+    new_profile: schemas.ProfileCreate = schemas.ProfileCreate(
+        email="test@test.com",
+        password="test_password"
+    )
+    await client.post('/register', json=new_profile.dict())
+    response = await client.post(
+        '/login',
+        data={
+            'username': new_profile.email,
+            'password': new_profile.password
+        },
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+    )
+    access_token = response.json()['access_token']
+    client.headers = {
+        **client.headers,
+        "Authorization": f"Bearer {access_token}",
+    }
+    yield client

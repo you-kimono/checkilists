@@ -13,3 +13,15 @@ class TestUnauthenticatedRoutes:
     ) -> None:
         response = await client.get('/checklists/')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+class TestAuthenticatedRoutes:
+
+    @pytest.mark.asyncio
+    async def test_again(
+            self,
+            authorized_client: AsyncClient
+    ) -> None:
+
+        response = await authorized_client.get('/checklists/')
+        assert response.status_code == status.HTTP_200_OK
