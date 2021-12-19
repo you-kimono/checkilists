@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-
 from . import models
 from .exceptions import EmailAlreadyTaken, InvalidProfile
 from .hashing import Hash

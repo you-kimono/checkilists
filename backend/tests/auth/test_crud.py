@@ -61,7 +61,7 @@ class TestSaveProfile:
 class TestGetProfileByID:
 
     @pytest.mark.asyncio
-    async def test_get_profile_returns_expected_entry(
+    async def test_get_profile_by_id_returns_expected_entry(
             self,
             client: AsyncClient,
             new_profile: schemas.ProfileCreate,
@@ -78,7 +78,7 @@ class TestGetProfileByID:
         assert profile == retrieved_profile
 
     @pytest.mark.asyncio
-    async def test_get_non_existing_profile_throws_exception(
+    async def test_get_non_existing_profile_raises_exception(
             self,
             client: AsyncClient,
             new_profile: schemas.ProfileCreate,

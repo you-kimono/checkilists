@@ -1,5 +1,6 @@
-from database.core import Base
 from sqlalchemy import Column, Integer, String
+
+from database.core import Base
 
 
 class Profile(Base):
