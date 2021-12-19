@@ -5,7 +5,8 @@ class EmailAlreadyTaken(Exception):
         self.field = 'email'
 
 
-class UserNotExisting(Exception):
-    def __init__(self, user_id: int, msg: str = 'email already taken', *args):
-        super(UserNotExisting, self).__init__(msg, *args)
-        self.user_id = user_id
+class InvalidProfile(Exception):
+    def __init__(self, profile_id: int = -1, email: str = "", msg: str = 'invalid profile', *args):
+        super(InvalidProfile, self).__init__(msg, *args)
+        self.profile_id = profile_id
+        self.email = email

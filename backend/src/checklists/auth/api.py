@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from database.core import SessionLocal
+from database.core import engine, SessionLocal
 from auth import models, schemas
 from auth import crud
-from auth.exceptions import EmailAlreadyTaken, UserNotExisting
+from auth.exceptions import EmailAlreadyTaken, InvalidProfile
+from .hashing import Hash
+from . import token
 
 
+models.Base.metadata.create_all(bind=engine)
 router = APIRouter()
 
 
@@ -18,10 +21,10 @@ async def get_db():
         db.close()
 
 
-@router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.User)
-async def register(request: schemas.UserCreate, db: Session = Depends(get_db)):
+@router.post('/register', status_code=status.HTTP_201_CREATED, response_model=schemas.Profile)
+async def register(request: schemas.ProfileCreate, db: Session = Depends(get_db)):
     try:
-        profile = await crud.save_profile(models.User(**request.dict()), db)
+        profile = await crud.save_profile(models.Profile(**request.dict()), db)
         return profile
     except EmailAlreadyTaken:
         raise HTTPException(
@@ -30,25 +33,45 @@ async def register(request: schemas.UserCreate, db: Session = Depends(get_db)):
         )
 
 
-@router.delete('/{user_id}', status_code=status.HTTP_202_ACCEPTED)
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+@router.post('/login')
+async def login(request: schemas.Login, db: Session = Depends(get_db)):
+    invalid_credentials_exception: HTTPException = HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f'invalid credentials',
+    )
     try:
-        await crud.delete_profile(user_id, db)
+        profile = await crud.get_profile_by_email(request.email, db)
+        if not Hash.verify(profile.password, request.password):
+            raise invalid_credentials_exception
+        # TODO generate jwt token and return it
+        access_token_expires = token.timedelta(minutes=token.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = token.create_access_token(
+            data={"sub": profile.email}, expires_delta=access_token_expires
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+    except InvalidProfile:
+        raise invalid_credentials_exception
+
+
+@router.delete('/profiles/{profile_id}', status_code=status.HTTP_202_ACCEPTED)
+async def delete_profile(profile_id: int, db: Session = Depends(get_db)):
+    try:
+        await crud.delete_profile(profile_id, db)
         return {}
-    except UserNotExisting:
+    except InvalidProfile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'user with id {user_id} not found',
+            detail=f'profile with id {profile_id} not found',
         )
 
 
-@router.get('/{user_id}', status_code=status.HTTP_200_OK)
-async def get_user(user_id: int, db: Session = Depends(get_db)):
+@router.get('/profiles/{profile_id}', status_code=status.HTTP_200_OK)
+async def get_profile(profile_id: int, db: Session = Depends(get_db)):
     try:
-        profile = await crud.get_profile(user_id, db)
+        profile = await crud.get_profile_by_id(profile_id, db)
         return profile
-    except UserNotExisting:
+    except InvalidProfile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'user with id {user_id} not found',
+            detail=f'profile with id {profile_id} not found',
         )

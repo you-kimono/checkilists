@@ -2,6 +2,7 @@ bcrypt
 fastapi
 passlib
 pydantic[email]
+python-jose
 SQLAlchemy
 uvicorn
 
