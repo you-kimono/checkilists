@@ -32,7 +32,6 @@ def verify_token(token: str):
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
-        return schemas.TokenData(email=email)
+        return schemas.TokenData(username=email)
     except JWTError:
         raise credentials_exception
-

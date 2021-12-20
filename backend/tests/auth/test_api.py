@@ -143,8 +143,7 @@ class TestDeleteProfile:
     @pytest.mark.asyncio
     async def test_delete_non_existing_profile(
             self,
-            client: AsyncClient,
-            new_profile: schemas.ProfileCreate
+            client: AsyncClient
     ) -> None:
         response = await client.delete(f'/profiles/1')
         assert response.status_code == status.HTTP_404_NOT_FOUND

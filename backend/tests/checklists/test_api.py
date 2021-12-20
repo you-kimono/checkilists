@@ -112,3 +112,46 @@ class TestGetChecklist:
         response = await authorized_client.get(f'/checklists/{checklist_id}')
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.json()['detail'] == f'checklist with id {checklist_id} not found'
+
+
+class TestGetChecklists:
+
+    @pytest.mark.asyncio
+    async def test_get_all_checklists_returns_expected_results(
+            self,
+            authorized_client: AsyncClient,
+            new_checklist: schemas.ChecklistCreate
+    ) -> None:
+        response = await authorized_client.post('/checklists/', json=new_checklist.dict())
+        checklist_1 = schemas.Checklist(**response.json())
+        response = await authorized_client.post('/checklists/', json=new_checklist.dict())
+        checklist_2 = schemas.Checklist(**response.json())
+
+        response = await authorized_client.get(f'/checklists/')
+        assert response.status_code == status.HTTP_200_OK
+        assert checklist_1 in response.json()
+        assert checklist_2 in response.json()
+
+
+class TestDeleteChecklist:
+
+    @pytest.mark.asyncio
+    async def test_delete_existing_checklist(
+            self,
+            authorized_client: AsyncClient,
+            new_checklist: schemas.ChecklistCreate
+    ) -> None:
+        await authorized_client.post('/checklists/', json=new_checklist.dict())
+        response = await authorized_client.delete(f'/checklists/1')
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        response = await authorized_client.get(f'/checklists/1')
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_delete_non_existing_checklist(
+            self,
+            authorized_client: AsyncClient
+    ) -> None:
+        response = await authorized_client.delete(f'/checklists/1')
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()['detail'] == 'checklist with id 1 not found'

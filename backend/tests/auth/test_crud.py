@@ -148,7 +148,6 @@ class TestDeleteProfile:
     async def test_delete_non_existing_profile_throws_exception(
             self,
             client: AsyncClient,
-            new_profile: schemas.ProfileCreate,
             test_database
     ) -> None:
         with pytest.raises(exceptions.InvalidProfile):
