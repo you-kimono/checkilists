@@ -21,14 +21,15 @@ async def get_all_checklists(
     return response
 
 
-@router.get('/{checklist_id}', status_code=status.HTTP_200_OK)
+@router.get('/{checklist_id}', status_code=status.HTTP_200_OK, response_model=schemas.Checklist)
 async def get_checklist(
         checklist_id: int,
         db: Session = Depends(get_db),
         profile: auth_schemas.TokenData = Depends(oauth2.get_current_user)
 ):
     try:
-        return await services.get_checklist_by_id(checklist_id, profile, db)
+        checklist = await services.get_checklist_by_id(checklist_id, profile, db)
+        return checklist
     except exceptions.InvalidChecklist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -46,8 +47,31 @@ async def create_checklist(
     return checklist
 
 
+@router.patch('/{checklist_id}', status_code=status.HTTP_200_OK, response_model=schemas.Checklist)
+async def update_checklist(
+        checklist_id: int,
+        request: schemas.Checklist,
+        db: Session = Depends(get_db),
+        profile: auth_schemas.TokenData = Depends(oauth2.get_current_user)
+):
+    db_checklist: models.Checklist = models.Checklist(
+        id=request.id,
+        title=request.title,
+        description=request.description
+    )
+    db_steps: List[models.Step] = []
+    for step in request.steps:
+        db_step: models.Step = models.Step(**step.dict())
+        db_step.checklist = db_checklist
+        db_step.checklist_id = db_checklist.id
+        db_steps.append(db_step)
+    db_checklist.steps = db_steps
+    checklist = await services.update_checklist(checklist_id, db_checklist, profile, db)
+    return checklist
+
+
 @router.delete('/{checklist_id}', status_code=status.HTTP_202_ACCEPTED)
-async def get_checklist(
+async def delete_checklist(
         checklist_id: int,
         db: Session = Depends(get_db),
         profile: auth_schemas.TokenData = Depends(oauth2.get_current_user)

@@ -33,6 +33,20 @@ async def get_all_checklists(profile_email: str, database: Session) -> List[mode
     return checklists
 
 
+async def update_checklist(
+        updated_checklist: models.Checklist,
+        profile_email: str,
+        database: Session
+) -> models.Checklist:
+    db_checklist = await get_checklist_by_id(updated_checklist.id, profile_email, database)
+    db_checklist.title = updated_checklist.title
+    db_checklist.description = updated_checklist.description
+    database.add(db_checklist)
+    database.commit()
+    database.refresh(db_checklist)
+    return db_checklist
+
+
 async def delete_checklist(checklist_id: int, profile_email: str, database: Session) -> None:
     profile = await crud.get_profile_by_email(profile_email, database)
     checklist = database.query(models.Checklist).filter(

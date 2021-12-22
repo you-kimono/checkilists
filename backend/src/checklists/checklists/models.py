@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
-
+from sqlalchemy.orm import relationship
 from database.core import Base
 
 
@@ -11,6 +11,8 @@ class Checklist(Base):
     description = Column(String, unique=False, index=False)
     owner_id = Column(Integer, ForeignKey('profiles.id'), nullable=False)
 
+    steps = relationship("Step", back_populates="checklist")
+
 
 class Step(Base):
     __tablename__ = 'steps'
@@ -21,3 +23,5 @@ class Step(Base):
     order = Column(Integer, unique=False, index=False)
     is_completed = Column(Boolean, unique=False, index=False, default=False)
     checklist_id = Column(Integer, ForeignKey('checklists.id'), nullable=False)
+
+    checklist = relationship("Checklist", back_populates="steps")

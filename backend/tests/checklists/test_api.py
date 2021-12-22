@@ -51,6 +51,20 @@ class TestUnauthenticatedRoutes:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     @pytest.mark.asyncio
+    async def test_update_checklist(
+            self,
+            client: AsyncClient,
+            new_checklist: schemas.ChecklistCreate
+    ) -> None:
+        updated_checklist: schemas.Checklist = schemas.Checklist(
+            id=1,
+            title=new_checklist.title,
+            description=new_checklist.description,
+        )
+        response = await client.patch('/checklists/1', json=updated_checklist.dict())
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    @pytest.mark.asyncio
     async def test_delete_checklist(
             self,
             client: AsyncClient
@@ -342,3 +356,62 @@ class TestDeleteStep:
         missing_checklist_id: int = 666
         response = await authorized_client.delete(f'/checklists/{missing_checklist_id}/steps/{step_id}')
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+class TestChecklistWithSteps:
+
+    @pytest.mark.asyncio
+    async def test_retrieved_checklist_contains_its_steps(
+            self,
+            authorized_client: AsyncClient,
+            new_checklist: schemas.ChecklistCreate,
+            new_simple_step: schemas.StepCreate
+    ) -> None:
+        response = await authorized_client.post('/checklists/', json=new_checklist.dict())
+        checklist_id: int = response.json()['id']
+
+        response = await authorized_client.post(f'/checklists/{checklist_id}/steps', json=new_simple_step.dict())
+        step: schemas.Step = schemas.Step(**response.json())
+
+        response = await authorized_client.get(f'/checklists/{checklist_id}')
+        data = response.json()
+
+        assert step in data['steps']
+
+
+class TestUpdateChecklist:
+
+    @pytest.mark.asyncio
+    async def test_update_checklist(
+            self,
+            authorized_client: AsyncClient,
+            new_checklist: schemas.ChecklistCreate,
+            new_simple_step: schemas.StepCreate
+    ) -> None:
+        response = await authorized_client.post('/checklists/', json=new_checklist.dict())
+        checklist_id: int = response.json()['id']
+
+        await authorized_client.post(f'/checklists/{checklist_id}/steps', json=new_simple_step.dict())
+
+        response = await authorized_client.get(f'/checklists/{checklist_id}')
+        checklist = schemas.Checklist(**response.json())
+
+        updated_checklist: schemas.Checklist = schemas.Checklist(
+            id=checklist.id,
+            title='new_title',
+            description='new_checklist_description'
+        )
+        updated_checklist.steps.append(
+            schemas.Step(
+                id=checklist.steps[0].id,
+                text='new_text',
+                description='new_step_description',
+                order=7,
+                is_completed=True
+            )
+        )
+        await authorized_client.patch(f'/checklists/{checklist_id}', json=updated_checklist.dict())
+        response = await authorized_client.get(f'/checklists/{checklist_id}')
+        retrieved_checklist = schemas.Checklist(**response.json())
+
+        assert updated_checklist == retrieved_checklist
