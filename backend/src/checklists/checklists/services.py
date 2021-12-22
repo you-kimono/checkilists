@@ -17,3 +17,15 @@ async def get_all_checklists(user: auth_schemas.TokenData, db: Session):
 
 async def delete_checklist(checklist_id: int, user: auth_schemas.TokenData, db: Session):
     return await crud.delete_checklist(checklist_id, user.username, db)
+
+
+async def create_step(step: models.Step, checklist_id: int, user: auth_schemas.TokenData, db: Session):
+    return await crud.save_step(step, checklist_id, user.username, db)
+
+
+async def get_step_by_id(step_id: int, checklist_id: int, user: auth_schemas.TokenData, db: Session):
+    return await crud.get_step_by_id(step_id, checklist_id, user.username, db)
+
+
+async def delete_step(step_id: int, checklist_id: int, user: auth_schemas.TokenData, db: Session):
+    return await crud.delete_step(step_id, checklist_id, user.username, db)

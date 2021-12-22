@@ -59,3 +59,65 @@ async def get_checklist(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'checklist with id {checklist_id} not found',
         )
+
+
+@router.post('/{checklist_id}/steps', status_code=status.HTTP_201_CREATED, response_model=schemas.Step)
+async def create_step(
+        checklist_id: int,
+        request: schemas.StepCreate,
+        db: Session = Depends(get_db),
+        profile: auth_schemas.TokenData = Depends(oauth2.get_current_user)
+):
+    step = await services.create_step(models.Step(**request.dict()), checklist_id, profile, db)
+    return step
+
+
+@router.get('/{checklist_id}/steps', status_code=status.HTTP_200_OK, response_model=schemas.Step)
+async def get_step(
+        checklist_id: int,
+        step_id: int,
+        db: Session = Depends(get_db),
+        profile: auth_schemas.TokenData = Depends(oauth2.get_current_user)
+):
+    try:
+        step = await services.get_step_by_id(step_id, checklist_id, profile, db)
+        return step
+    except (exceptions.InvalidStep, exceptions.InvalidChecklist):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'the resource you were looking for does not exist',
+        )
+
+
+@router.get('/{checklist_id}/steps/{step_id}', status_code=status.HTTP_200_OK, response_model=schemas.Step)
+async def get_step(
+        checklist_id: int,
+        step_id: int,
+        db: Session = Depends(get_db),
+        profile: auth_schemas.TokenData = Depends(oauth2.get_current_user)
+):
+    try:
+        step = await services.get_step_by_id(step_id, checklist_id, profile, db)
+        return step
+    except (exceptions.InvalidStep, exceptions.InvalidChecklist):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'the resource you were looking for does not exist',
+        )
+
+
+@router.delete('/{checklist_id}/steps/{step_id}', status_code=status.HTTP_202_ACCEPTED, response_model=schemas.Step)
+async def delete_step(
+        checklist_id: int,
+        step_id: int,
+        db: Session = Depends(get_db),
+        profile: auth_schemas.TokenData = Depends(oauth2.get_current_user)
+):
+    try:
+        step = await services.delete_step(step_id, checklist_id, profile, db)
+        return step
+    except (exceptions.InvalidStep, exceptions.InvalidChecklist):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'the resource you were looking for does not exist',
+        )
