@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
+import authService from '../services/auth.service';
 const axios = require('axios');
 
 
@@ -13,7 +14,6 @@ const Signup: React.FC<IProps> = ({ onClick }): JSX.Element => {
     const [password, setPassword] = useState('')
     const [repeat_password, setRepeatPassword] = useState('')
 
-    //const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {
         onClick(e)
         if (
@@ -24,19 +24,16 @@ const Signup: React.FC<IProps> = ({ onClick }): JSX.Element => {
         ) {
             return;
         } else {
-            console.log('facciamo partire la richiesta');
-            axios.post('http://localhost:8000/register', {
-                username: email,
-                password: password
-            })
-            .then(function(response) {
-                if (response.data.token) {
-                    console.log('token: ' + response.data.token)
+            authService.register(email, password)
+            .then(
+                (response) => {
+                    console.log(response)
+                    console.log(response.data)
+                },
+                (error) => {
+                    console.log(error.data)
                 }
-            })
-            .catch(function (error) {
-                console.log('error: ' + error)
-            })
+            );
         }
     }
 
